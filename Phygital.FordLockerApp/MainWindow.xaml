@@ -1,0 +1,29 @@
+﻿<Window x:Class="Phygital.FordLockerApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
+        xmlns:local="clr-namespace:Phygital.FordLockerApp"
+        Activated="Window_Activated"
+        Closing="Window_Closing"        
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid Margin="0,62,400,0">
+            <ScrollViewer>
+                <TextBlock x:Name="Status" TextWrapping="Wrap" Text="Disconnected" />
+            </ScrollViewer>
+            <Button x:Name="Retry" Margin="350,246,350,168" Width="100" Height="20" Content="Retry" Visibility="Hidden" Click="Retry_Click"/>
+        </Grid>
+        <Grid Margin="0,0,0,372">
+            <Image HorizontalAlignment="Left" Height="62" Width="100" Source="/FordLogo.png" Margin="10,0,0,0"/>
+        </Grid>
+        <Grid Margin="400,62,0,0">
+
+            <TextBlock x:Name="Instructions" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" Text="Please scan your device to begin" FontFamily="Ford Antenna Black" FontSize="36"></TextBlock>
+
+        </Grid>
+
+    </Grid>
+</Window>
