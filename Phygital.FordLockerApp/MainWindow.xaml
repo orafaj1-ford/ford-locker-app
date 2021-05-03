@@ -8,21 +8,24 @@
         Activated="Window_Activated"
         Closing="Window_Closing"        
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="1920" Width="1080" WindowState="Maximized" WindowStyle="None">
     <Grid>
-        <Grid Margin="0,62,400,0">
+        <Grid Margin="0,0,0,1500">
+            <Image HorizontalAlignment="Left" Height="62" Width="100" Source="/FordLogo.png" Margin="10,10,10,10"/>
+            <Border BorderThickness="1" BorderBrush="Black"/>
+        </Grid>
+        <Grid Margin="0,100,3220,0">
             <ScrollViewer>
                 <TextBlock x:Name="Status" TextWrapping="Wrap" Text="Disconnected" />
             </ScrollViewer>
-            <Button x:Name="Retry" Margin="350,246,350,168" Width="100" Height="20" Content="Retry" Visibility="Hidden" Click="Retry_Click"/>
         </Grid>
-        <Grid Margin="0,0,0,372">
-            <Image HorizontalAlignment="Left" Height="62" Width="100" Source="/FordLogo.png" Margin="10,0,0,0"/>
-        </Grid>
-        <Grid Margin="400,62,0,0">
-
-            <TextBlock x:Name="Instructions" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" Text="Please scan your device to begin" FontFamily="Ford Antenna Black" FontSize="36"></TextBlock>
-
+        <Grid Margin="220,100,0,0">
+            <TextBlock x:Name="ArduinoNotFoundError" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Could not find"/><LineBreak/><Run Text="the Ardunio"/></TextBlock>
+            <TextBlock x:Name="ArduinoConnectionError" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Could not connect"/><LineBreak/><Run Text="to the Ardunio"/></TextBlock>
+            <TextBlock x:Name="Intro" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Please scan your"/><LineBreak/><Run Text="device to begin"/></TextBlock>
+            <TextBlock x:Name="RFIDFail" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Scan Failed"/><LineBreak/><Run Text="Please try again"/></TextBlock>
+            <TextBlock x:Name="DoorOpened" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Please collect"/><LineBreak/><Run Text="your package from"/><LineBreak/><Run Text="door #"/><Run x:Name="DoorOpenedDoorId" Text=""/></TextBlock>
+            <TextBlock x:Name="DoorLeftOpen" HorizontalAlignment="Stretch" TextWrapping="Wrap" VerticalAlignment="Center" TextAlignment="Center" FontFamily="Ford Antenna Black" FontSize="64" Visibility="Hidden"><Run Text="Please close door #"/><Run x:Name="DoorLeftOpenDoorId" Text=""/></TextBlock>
         </Grid>
 
     </Grid>

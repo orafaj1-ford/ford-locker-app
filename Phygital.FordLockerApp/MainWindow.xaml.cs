@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Phygital.FordLockerApp.Business;
 using Phygital.FordLockerApp.Business.Models;
 using System;
 using System.Collections.Generic;
@@ -8,21 +9,23 @@ using System.Linq;
 using System.Management;
 using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Phygital.FordLockerApp
 {
     public partial class MainWindow : Window
     {
         private int _port = 9600;
+        private SerialPort _serialPort = new SerialPort();
+        private bool _readingCommand = false;
+        private StringBuilder _commandBuffer = new StringBuilder();
+        private List<RFIDDataItem> _dataItems = new List<RFIDDataItem>();
+        private DispatcherTimer _timer = new DispatcherTimer();
 
-        SerialPort serialPort = new SerialPort();
-
-        bool readingCommand = false;
-        StringBuilder commandBuffer = new StringBuilder();
-        List<RFIDDataItem> dataItems = new List<RFIDDataItem>();
         public MainWindow()
         {
-            InitializeComponent();           
+            InitializeComponent();
+            _timer.Tick += Timer_Tick;
         }
 
         private string AutodetectArduinoPort()
@@ -61,12 +64,15 @@ namespace Phygital.FordLockerApp
         {
             try
             {
-                serialPort.PortName = portName;
-                serialPort.BaudRate = _port;
-                serialPort.Open();
-                serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPort_DataReceived);
-                serialPort.WriteLine("START");
+                _timer.Interval = TimeSpan.FromSeconds(5);
+             
+                _serialPort.PortName = portName;
+                _serialPort.BaudRate = _port;
+                _serialPort.Open();
+                _serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPort_DataReceived);
+                _serialPort.WriteLine("START");
                 Status.Text = $"Connected{Environment.NewLine}";
+                ShowText(TextItem.Intro);
                 return true;
             }
             catch (Exception)
@@ -80,25 +86,25 @@ namespace Phygital.FordLockerApp
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (e.EventType == SerialData.Eof) return;
-                var content = serialPort.ReadExisting();
+                var content = _serialPort.ReadExisting();
 
                 var chars = content.ToArray();
                 foreach (var chr in chars)
                 {                           
                     if (chr == ']')
                     {
-                        readingCommand = false;
-                        var command = commandBuffer.ToString();
+                        _readingCommand = false;
+                        var command = _commandBuffer.ToString();
                         RunCommand(command);
-                        commandBuffer.Clear();
+                        _commandBuffer.Clear();
                     }
-                    if (readingCommand)
+                    if (_readingCommand)
                     {
-                        commandBuffer.Append(chr);
+                        _commandBuffer.Append(chr);
                     }
                     if (chr == '[')
                     {
-                        readingCommand = true;
+                        _readingCommand = true;
                     }
                 }
 
@@ -110,85 +116,93 @@ namespace Phygital.FordLockerApp
         {
             if (commandVals.StartsWith("RFIDFAIL"))
             {
-                
+                ShowText(TextItem.RFIDError);
+                StopTimer();
+                StartTimer();
             }
             else if (commandVals.StartsWith("RFIDOK"))
             {
                 var dataId = commandVals.Split(":").Last();
-                var dataItem = dataItems.FirstOrDefault(x => x.DataId == dataId);
+                var dataItem = _dataItems.FirstOrDefault(x => x.DataId == dataId);
                 if (dataItem == null) {
                 };
-                serialPort.WriteLine($"o{dataItem.DoorId}");
-
-
+                _serialPort.WriteLine($"o{dataItem.DoorId}");
+                ShowText(TextItem.DoorOpened, dataItem.DoorId + 1);
+                StopTimer();
+                StartTimer();
             }
             else if (commandVals.StartsWith("DOOR"))
             {
-                
+                var doorId = int.Parse(commandVals.Split(":").Last());
+                ShowText(TextItem.DoorLeftOpenError, doorId + 1);
+                StopTimer();
+                StartTimer();
             }
         }
 
-        private void Retry_Click(object sender, RoutedEventArgs e)
-        {
-            Retry.IsEnabled = false;
-            StartArduino();            
-        }
-
-
         private void StartArduino()
         {
-            if (serialPort.IsOpen) return;
+            if (_serialPort.IsOpen) return;
 
             LoadRFIDData();
-
-            Retry.Visibility = Visibility.Hidden;
-            Retry.IsEnabled = false;
-            
             var portName = AutodetectArduinoPort();
             if (portName == null)
             {
-                Status.Text = "No Arduino Detected - Check Connection and Drivers!";
-                Retry.Visibility = Visibility.Visible;
-                Retry.IsEnabled = true;
+                ShowText(TextItem.ArduinoNotFoundError);
                 return;
             }
             
             var connected = StartListeningToArduino(portName);
             if (!connected)
             {
-                Status.Text = "Ardunio Detected But Could Not Connect - Check Port and Connection!";
-                Retry.Visibility = Visibility.Visible;
-                Retry.IsEnabled = true;
+                ShowText(TextItem.ArduinoConnectionError);
                 return;
             }
 
-            serialPort.Write("0");
+            _serialPort.Write("0");
         }
 
         private void LoadRFIDData()
         {
             var json = File.ReadAllText("cards.json");
-            dataItems = JsonConvert.DeserializeObject<RFIDDataItem[]>(json).ToList();
+            _dataItems = JsonConvert.DeserializeObject<RFIDDataItem[]>(json).ToList();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (serialPort.IsOpen)
+            if (_serialPort.IsOpen)
             {
-                serialPort.Close();
+                _serialPort.Close();
                 Status.Text = "Disconnected";
             }
         }
 
-        private void ShowFailRFIDScanText()
+        private void ShowText(TextItem textItem, int? door = null)
+        {            
+            Intro.Visibility = textItem == TextItem.Intro ? Visibility.Visible : Visibility.Hidden;
+            RFIDFail.Visibility = textItem == TextItem.RFIDError ? Visibility.Visible : Visibility.Hidden;
+            DoorOpened.Visibility = textItem == TextItem.DoorOpened ? Visibility.Visible : Visibility.Hidden;
+            DoorLeftOpen.Visibility = textItem == TextItem.DoorLeftOpenError ? Visibility.Visible : Visibility.Hidden;
+            ArduinoNotFoundError.Visibility = textItem == TextItem.ArduinoNotFoundError ? Visibility.Visible : Visibility.Hidden;
+            ArduinoConnectionError.Visibility = textItem == TextItem.ArduinoConnectionError ? Visibility.Visible : Visibility.Hidden;
+            DoorOpenedDoorId.Text = door.ToString();
+            DoorLeftOpenDoorId.Text = door.ToString();
+        }
+     
+        private void Timer_Tick(object sender, EventArgs e)
         {
-
+            ShowText(TextItem.Intro);
+            StopTimer();
         }
 
-        private void ShowSuccessRFIDScanText(int door)
-        {
-
+        private void StartTimer()
+        {            
+            _timer.Start();
         }
 
+        private void StopTimer()
+        {
+            _timer.Stop();
+         }
     }
 }
